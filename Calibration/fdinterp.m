@@ -4,17 +4,19 @@
 % function written by Chris
 % comments written by Vince Pericoli (otherwise left mainly untouched)
 
-% update 21 Aug 2015: Vince adapted function to use linear interpolation
-% instead of simply assuming acceptably discrete values. Need to
-% double-check how this funciton is used in the context of the main
-% program. There might be a bug in the for i loop... continue is used
+% I get a sense that using actual linear interp would not be good for
+% cyclic loading, because you would "chop off" the extrema by averaging
+% them with an unloading step... this would effect the error calc.
+%
+% Also, there might be a bug in the for i loop... continue is used
 % before setting the target. Also changed output from the non-descript
 % DataOut (which is deceptively named in the calling routines, S.T. the
 % user thinks this returns realDispl instead of U2), to a more descriptive
 % 2 vectors of ForceOut and DisplOut. Really, NEITHER of these outputs are
-% "real" ... since the Displ is from ABAQUS and the realForce is an
-% interpolated value
-function [DisplOut, ForceOut, through] = fdinterp(U2,RealDispl,RealForce)
+% "real" ... since the Displ is from ABAQUS and the realForce is assigned
+% to a slightly different (nearest) x-location
+
+function [DisplOut, ForceOut, through] = fdinterp(U2, RealDispl, RealForce)
 
 % preallocate
 %DataOut(1,:) = [RealDispl(1), RealForce(1)];
@@ -34,8 +36,8 @@ for i = 2:length(U2)
     if target_U2 == U2(i)
         % if U2(i) = U2(i-1)
         % then current displ = prev. displ... so, take the same force.
-        % this is important to check because otherwise the routine will
-        % not associate the correct force with this displacement
+        % I assume this is important to check because otherwise the routine
+        % will not associate the correct force with this displacement
         ForceOut(i) = ForceOut(i-1);
         DisplOut(i) = DisplOut(i-1);
         continue
@@ -54,26 +56,34 @@ for i = 2:length(U2)
         if sign( RealDispl(j) - target_U2 ) ~= sign( RealDispl(j+1) - target_U2 )
             % check if target_U2 is between RealDispl(j+1) and RealDispl(j)
             
-            % if true, interpolate to find the RealForce associated with 
-            % target_U2 displacement
-            slope = (RealForce(j+1) - RealForce(j)) / ...
-                    (RealDispl(j+1) - RealDispl(j));
-            ForceOut(i) = slope*(target_U2 - RealDispl(j)) + RealForce(j);
+            % if true, associate the RealForce with target_U2 displacement
+            ForceOut(i) = RealForce(j);
             DisplOut(i) = U2(i); % = target_U2
             
                         
             % variable "through" seems to be a flag that indicates if this
             % process is completed adequately... used in error calculation
             if j < 0.8*length(RealDispl)
-                through=0;
+                through = 0;
             else
-                through=1;
+                through = 1;
             end
             
             break;
         end
         
         j = j + 1;
+        
+        % I'm not entirely sure what the point of the next statement is.
+        % What is it's purpose, why is it necessary? I doubt it will ever
+        % be activated, but leaving it in because perhaps Chris encountered
+        % a situation that required this...
+        if j > length(RealDispl)
+            ForceOut(i) = RealForce(length(RealDispl));
+            DisplOut(i) = U2(length(RealDispl));
+            break;
+        end
+        
     end
     
     if j >= length(RealDispl)
