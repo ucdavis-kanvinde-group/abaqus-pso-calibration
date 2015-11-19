@@ -1,12 +1,21 @@
 function [params,RF2,U2] = runAbaqusVerification(bestpos, bestval, tests, testnums)
-% This function is for visual verification of the PSO results. Furthermore,
-% it returns the "actual" (non-transformed) Armstrong-Frederick Parameters
+% Provide your PSO results, and this function will return the "actual"
+% (non-transformed) Armstrong-Frederick Parameters. Additionally, it will
+% run an ABAQUS job with those parameters, and plot out the results so that
+% you may visually inspect them.
+%
 %
 % bestpos   = transformed output from PSO algorithm
 % bestval   = output from PSO algorithm (for informational purposes only)
 % tests     = specifically designed .mat struct file containing test data
 %             (see documentation)
 % testnums  = subset of tests on which to run analysis
+
+%
+% Add Calibration path to search directory, so those functions can be used.
+%
+calib_dir = strrep(pwd, 'Verification', 'Calibration');
+addpath(calib_dir);
 
 %
 % Recover Parameters from bestpos ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
