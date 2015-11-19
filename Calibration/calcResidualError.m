@@ -1,25 +1,37 @@
-% This function passes back the error, error Ratio, field output data, and
-% "relevant" indices.
-
+% This function passes back the error, error Ratio, Abaqus 
+% Force-Displacement data, and "relevant" indices which were counted.
+%
 % defined error cases:
-%1: include elastic displacement, total dissipated energy
-%2: include elastic displacement, total energy flux
-%3: exclude elastic displacement, total energy flux
-%4: rainflow type cycles only, total energy flux
+%   1: include elastic displacement, total dissipated energy
+%   2: include elastic displacement, total energy flux
+%   3: exclude elastic displacement, total energy flux
+%   4: rainflow type cycles only, total energy flux
+%
+% This is mainly just copied from Chris' original code, with some comments
+% added in. Error case 4 is what is recommended in his paper.
+% Some questions that still remain about Chris' code: 
+%   (1) The paper states that the plastic displacement history is used 
+%       rather than total displacement history, but that is not reflected 
+%       in the code for error case 4.
+%   (2) The paper states that the integrals are only evalueated for the
+%       first two half-cycles which exceed the previous displacement
+%       extrema, but the code additionally includes the first 2 full-cycles
+%       as well (that part is not mentioned in the paper).
 
-% one issue is that "exclude elastic displacement" uses matlab LSQ polyfit
-% to determine the elastic modulus... however, it is doing the best least
-% squares fit to a straight line, without forcing the y-intercept to be
-% zero. Furthermore, it only subtracts the initial elastic part, not the
-% elastic unloading/reloading parts... perhaps that is okay.
-
-% Note: NONE of the defined error cases were double-checked for accurracy,
-% except for case 3 (the important one). The others were simply copied
-% directly from Chris' code.
-
-function [err, errRatio, forceDispl, varargout] = ...
+function [err, errRatio, forceDispl, timeStepsToCount] = ...
                 calcResidualError(fileID, realdata, errortype, rxNodeSet)
 
+% warn user that the errortype 4 is recommended... as that is what is
+% documented in the original paper.
+persistent WHANDLE 
+
+if (errortype ~=4) && isempty(WHANDLE)
+    %only create msgbox if one has not been created yet
+	msgbox_ = sprintf('Warning: Error Type %i Not Recommended',errortype);
+    msgbox(msgbox_,'Warning','warn');
+    WHANDLE = true;
+end
+            
 % obtain force-displacement data from Abaqus
 [frame, RF2, U2] = fetchOdbLoadDispl(fileID, rxNodeSet);
 
@@ -45,12 +57,15 @@ switch errortype
         err      = abs( [0; diff(displ)]' ) * abs( abqForce - realForce );
         errRatio = err/(([0; diff(realdata(:,1))])'*(realdata(:,2)));
         
+        timeStepsToCount = 1:length(errRatio);
         
     case 2
         % include elastic displacement, total energy flux
         displ    = DisplOut;
         err      = abs( [0; diff(displ)]' ) * abs( abqForce - realForce );
         errRatio = err/(abs([0; diff(realdata(:,1))])'*abs(realdata(:,2)));
+        
+        timeStepsToCount = 1:length(errRatio);
         
     case 3
         % exclude elastic displacement, total energy flux
@@ -64,45 +79,58 @@ switch errortype
         err      = abs( [0; diff(displ)]' ) * abs( abqForce - realForce );
         errRatio = err/(abs([0; diff(realdata(:,1))])'*abs(realdata(:,2)));
         
-    case 4
-        % rainflow type cycles only, total energy flux (written by Chris)
+        timeStepsToCount = 1:length(errRatio);
         
-        % determine eligibile history: first two full cycles, plus any half
+    case 4
+        % rainflow-type cycles only, total energy flux
+        
+        % determine eligibile history: first two full cycles, then any half
         % cycles which exceed the previous maximum
-        cycleNum   = 1;
-        cycleStart = 1;
-        maxDispl   = 0;
-        minDispl   = 0;
-        timeStepsToCount = [];
+        
+        %initialize
+        cycleNum   = 1;         % number of half cycles counted
+        cycleStart = 1;         % cycle's starting index
+        maxDispl   = 0;         % maximum displacement so far
+        minDispl   = 0;         % minimum displacement so far
+        timeStepsToCount = [];  % list of indices which we want to include
         
         for i = 1:length(abqForce)
             % for entire length of history
             
-            %check for peaks
+            % check for peaks
             if i == 1
+                % skip
                 isPeak = false;
             elseif i == length(abqDispl)
+                % consider the last cycle a peak
                 isPeak = true;                
             else
                 dl = abqDispl(i)   - abqDispl(i-1);
                 dr = abqDispl(i+1) - abqDispl(i);
-                isPeak = ( dl*dr <= 0 ) & ( dl ~= 0 );
+                isPeak = ( dl*dr <= 0 ) && ( dl ~= 0 );
             end
             
             if isPeak
+                % set this cycle's indices
                 cycleEnd = i;
                 cycleInd = cycleStart:cycleEnd;
 
-                %check if cycle is qualified
-                if (cycleNum <= 4) || ...   %these are half cycles
+                % check if cycle is qualified 
+                % (i.e. if first 2 full cycles, or exceeds extrema)
+                if (cycleNum <= 4) || ...   %4 since these are half cycles
                        (abqDispl(i) > maxDispl) || (abqDispl(i) < minDispl)
-
+                    % then cycle is qualified
+                    
+                    % set new extrema criteria
                     maxDispl = max(maxDispl, abqDispl(i));
                     minDispl = min(minDispl, abqDispl(i));
                     
                     timeStepsToCount = [timeStepsToCount cycleInd]; %#ok<AGROW>
                 end
                 
+                % if it is a peak, but not qualified, then timeStepsToCount
+                % is not appended and the cycleStart index is moved up to
+                % exclude this cycle
                 cycleNum   = cycleNum + 1;
                 cycleStart = i + 1;
                 
@@ -113,15 +141,13 @@ switch errortype
         displ = DisplOut;
         
         errhist    = abs( [0; diff(displ)] ).*abs( abqForce - realForce );
-        suberrhist = errhist(timeStepsToCount);
-        err        = sum(suberrhist);
+        subErrHist = errhist(timeStepsToCount);
+        err        = sum(subErrHist);
         
         totEnergyHist = (abs([0; diff(DisplOut)]).*abs(ForceOut));
         normalizer    = sum(totEnergyHist(timeStepsToCount));
         errRatio      = err / normalizer;
-        
-        varargout{1} = timeStepsToCount;
-        
+
     otherwise
         error('Unknown error-type requested!')
 end
