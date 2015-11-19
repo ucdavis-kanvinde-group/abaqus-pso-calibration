@@ -77,11 +77,15 @@ while ~feof(templfid)
         fprintf(targfid,'\n');          %end line
         
         
-    elseif strncmpi(tmpline, '*Amplitude, name=', 15)
+    elseif strncmpi(tmpline, '*Amplitude, name=', 17)
         % if we encounter the Amplitude keyword
         
-        % write our desired Amplitude information
-        fprintf(targfid, '*Amplitude, name=Amp-3\n');
+        % figure out what the name of that amplitude keyword is
+        C = strsplit(tmpline, ', ');
+        ampName = C{2}(6:end);
+        
+        % write our desired Amplitude information (preserve ampName)
+        fprintf(targfid, ['*Amplitude, name=', ampName, '\n']);
         
         % read past any amplitude info which is defined in the template
         while ~strncmpi(tmpline,'**',2)
