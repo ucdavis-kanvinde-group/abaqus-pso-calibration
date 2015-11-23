@@ -48,8 +48,8 @@ testnames = fieldnames(tests);
 if nargin < 3
     % run all tests if not otherwise specified
     testnums = 1:length(testnames);
-    % default to error type 3 if not otherwise specified
-    errortype = 3;
+    % default to error type 4 if not otherwise specified
+    errortype = 4;
 end
 
 % obtain the relevant test names
