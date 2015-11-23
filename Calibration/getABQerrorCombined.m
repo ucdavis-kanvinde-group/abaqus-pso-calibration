@@ -120,7 +120,7 @@ fprintf('Extracting Errors from ODBs...');
 for i = 1:length(testnames)
 
     % set job's .ODB name (also the name of the .INP file)
-    fileID    = [testnames{i} '-dum'];
+    fileID = [testnames{i} '-dum'];
     
     % set the name of the assembly-level reaction node set
     rxNodeSet = tests.(testnames{i}).rxNodeSet;
@@ -128,10 +128,10 @@ for i = 1:length(testnames)
     % set the "real" test data
     if tests.(testnames{i}).symmetric
         % if the simulation is symmetric, divide displ by 2
-        realdata = [tests.(testnames{i}).disp/2, tests.(testnames{i}).force];
+        realdata = [tests.(testnames{i}).displ/2, tests.(testnames{i}).force];
     else
         % otherwise, use full displ
-        realdata = [tests.(testnames{i}).disp, tests.(testnames{i}).force];
+        realdata = [tests.(testnames{i}).displ, tests.(testnames{i}).force];
     end
     
     % calculate the residual error for this simulation
