@@ -160,7 +160,21 @@ end
 bestpos = gbestpos;
 bestval = gbestval;
 
-%save output arguments
-save('pso_results.mat','bestpos','bestval');
+%% save output arguments
+% we don't want to overwrite previous results
+
+%figure out how many existing pso_results there are
+dir_list = dir('pso_results*.mat');
+[save_num, ~] = size(dir_list);
+
+%based on this, set the save file name
+if save_num == 0
+    save_name = 'pso_results.mat';
+else
+    save_name = sprintf('pso_results (%i).mat',save_num);
+end
+
+%save to binary .mat using the above name
+save(save_name,'bestpos','bestval');
 
 end
