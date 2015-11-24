@@ -12,7 +12,7 @@ These functions rely on the abaqus-odb-tools library (see above).
 They exist purely for backward-compatibility, since that library
 was totally refactored into an object-oriented code.
 
-Simply download abaqus-odb-tools, and change the os.path.append
+Simply download abaqus-odb-tools, and change the sys.path.append
 directory (below) to point towards the download.
 """
 
@@ -24,8 +24,8 @@ directory (below) to point towards the download.
 from odbAccess import *
 from abaqusConstants import *
 import numpy
-import os
-os.path.append("C:\Users\Vince Pericoli\Documents\GitHub\abaqus-odb-tools")
+import sys
+sys.path.append("C:\Users\Vince Pericoli\Documents\GitHub\abaqus-odb-tools")
 from odbFieldVariableClasses import *
 
 #
