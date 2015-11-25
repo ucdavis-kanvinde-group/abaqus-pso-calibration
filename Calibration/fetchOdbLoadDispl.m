@@ -4,9 +4,14 @@ function [frame, RF2, U2] = fetchOdbLoadDispl(fileID, rxNodeSet)
 % field output data. Will return the abaqus frame values (pseudo-time), 
 % RF2 and U2 from rxNodeSet.
 
+% This will work whether your rxNodeSet is enforced as a kinematic coupling
+% constraint or not.
 
-%set the name of the ODB file
+% set the name of the ODB file
 odbName = [fileID, '.odb'];
+
+% force rxNodeSet to uppercase per ABAQUS convention
+rxNodeSet = upper(rxNodeSet);
 
 %
 % write python file ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

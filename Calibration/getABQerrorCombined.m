@@ -167,8 +167,13 @@ save historyData historyData
 
 fprintf('Extracting Fracture Mechanics Data, if requested...');
 for i = 1:length(testnames)
-    % only do it if requested...
-    if tests.(testnames{i}).getIntPtdata
+    if ~isfield(tests.(testnames{i}),'getIntPtData')
+        % if no field is defined, assume calcs not wanted
+        continue
+    end
+    
+    % otherwise, check if they are requested...
+    if tests.(testnames{i}).getIntPtData
         IntPtNodeSet = tests.(testnames{i}).IntPtNodeSet;
         [~, PEEQ, Mises, Pressure, Inv3] = ...
                                    fetchOdbIntPtData(fileID, IntPtNodeSet);
