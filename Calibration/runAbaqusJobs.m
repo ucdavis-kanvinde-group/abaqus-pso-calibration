@@ -72,6 +72,7 @@ while any(flags ~= 2)
         end
     end
     
+    % check each job every 10 seconds
     pause(10)
     
     if ~isequal(flags,lastFlags)
