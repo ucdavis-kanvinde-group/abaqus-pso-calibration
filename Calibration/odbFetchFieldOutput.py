@@ -25,7 +25,7 @@ from odbAccess import *
 from abaqusConstants import *
 import numpy
 import sys
-sys.path.append("C:\Users\Vince Pericoli\Documents\GitHub\abaqus-odb-tools")
+sys.path.append("C:\\Users\\Vince Pericoli\\Documents\\GitHub\\abaqus-odb-tools")
 from odbFieldVariableClasses import *
 
 #
@@ -38,7 +38,7 @@ def getNodalPEEQ(odbName, nodeSetName, verbose=True):
     dataName = 'PEEQ'
     nodalPEEQ = IntPtVariable(odbName, dataName, nodeSetName)
     nodalPEEQ.fetchNodalAverage()
-    nodalPEEQ.saveCSV(verbose)
+    nodalPEEQ.saveCSV(verbose=verbose)
     return
 
 def getNodalMises(odbName, nodeSetName, verbose=True):
@@ -47,7 +47,7 @@ def getNodalMises(odbName, nodeSetName, verbose=True):
     dataName = 'MISES'
     nodalMISES = IntPtVariable(odbName, dataName, nodeSetName)
     nodalMISES.fetchNodalAverage()
-    nodalMISES.saveCSV(verbose)
+    nodalMISES.saveCSV(verbose=verbose)
     return
 
 def getNodalPressure(odbName, nodeSetName, verbose=True):
@@ -56,7 +56,7 @@ def getNodalPressure(odbName, nodeSetName, verbose=True):
     dataName =  'PRESS'
     nodalPRESS = IntPtVariable(odbName, dataName, nodeSetName)
     nodalPRESS.fetchNodalAverage()
-    nodalPRESS.saveCSV(verbose)
+    nodalPRESS.saveCSV(verbose=verbose)
     return
     
 def getNodalInv3(odbName, nodeSetName, verbose=True):
@@ -65,7 +65,7 @@ def getNodalInv3(odbName, nodeSetName, verbose=True):
     dataName = 'INV3'
     nodalINV3 = IntPtVariable(odbName, dataName, nodeSetName)
     nodalINV3.fetchNodalAverage()
-    nodalINV3.saveCSV(verbose)
+    nodalINV3.saveCSV(verbose=verbose)
     return
 
 def getNodalDispl(odbName, nodeSetName, verbose=True):
@@ -76,7 +76,7 @@ def getNodalDispl(odbName, nodeSetName, verbose=True):
     dataName = 'U'
     nodalDispl = NodalVariable(odbName, dataName, nodeSetName)
     nodalDispl.fetchNodalOutput()
-    nodalDispl.saveCSV(verbose)
+    nodalDispl.saveCSV(verbose=verbose)
     return
 
 def getNodalReactionSum(odbName, nodeSetName, verbose=True):
@@ -87,6 +87,6 @@ def getNodalReactionSum(odbName, nodeSetName, verbose=True):
     dataName = 'RF'
     summedRF = NodalVariable(odbName, dataName, nodeSetName)
     summedRF.fetchNodalOutput()
-    summedRF.sumNodalData()
-    summedRF.saveCSV(verbose)
+    summedRF.sumNodalOutput()
+    summedRF.saveCSV(verbose=verbose)
     return
