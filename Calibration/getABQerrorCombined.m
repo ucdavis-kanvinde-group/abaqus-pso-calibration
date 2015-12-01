@@ -5,10 +5,12 @@ function [combinedError, errRatio, varargout] = ...
 % newparams = vector of material hardening parameters
 % tests     = specifically designed .mat struct file containing test data
 %             (see documentation)
-% testnums  = subset of tests on which to run analysis
+% testnums  = Optional subset of tests on which to run analysis (vector of 
+%             indices), or string 'all'. Default = 'all'
 % errortype = selector for internal error designation (see documentation or
-%             calcResidualError.m)
+%             calcResidualError.m). Default = 4
 
+persistent RUNCHECK
 
 %
 % Recover Parameters from newparams ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -45,15 +47,25 @@ params = [Fy Qinf b C0 0 reshape([Cn;gamman],length(Cn)*2,1)'];
 testnames = fieldnames(tests);
 
 % check the requested inputs...
-if nargin < 3
+if (nargin < 3) || strcmpi(testnums,'all')
     % run all tests if not otherwise specified
     testnums = 1:length(testnames);
+end
+
+if nargin < 4
     % default to error type 4 if not otherwise specified
     errortype = 4;
 end
 
 % obtain the relevant test names
 testnames = testnames(testnums);
+
+% if this is the first time the function has been called, check that the 
+% testnames struct's contain all required fields
+if isempty(RUNCHECK)
+    checkRequiredFields(tests, testnames)
+    RUNCHECK = false;
+end
 
 % preallocate fracture mechanics output (necessary if any params < 0)
 nanvec    = NaN * ones(1,length(testnums));
@@ -225,7 +237,7 @@ for i = 1:length(testnames)
     hold on
     
     % plot real test data
-    plot(tests.(testnames{i}).disp, tests.(testnames{i}).force);
+    plot(tests.(testnames{i}).displ, tests.(testnames{i}).force);
     
     % give it a meaningful title
     title_ = sprintf(' %s\n errRatio = %s', ...
