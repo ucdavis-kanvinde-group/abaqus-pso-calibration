@@ -4,7 +4,9 @@
 
 
 function checkRequiredFields(tests, testnames)
-% Checks that the tests you want to run have all of the required fields
+% Checks that the tests you want to run have all of the required fields.
+% Also checks to see if your python path to abaqus-odb-tools is defined
+% properly and can execute.
 
 %
 % define the required fields
@@ -46,6 +48,17 @@ if exist('missing_fields','var')
     % alert the user and error-out
     error(['The input struct is missing some required fields--', ...
            'see missing_fields for more info.'])
+end
+
+%
+% Now, try to execute the python function file, to see if it works.
+%
+status = system('abaqus python odbFetchFieldOutput.py');
+if status ~= 0
+    % then something went wrong.
+    error(['Error in odbFetchFieldOutput.py.\n', ...
+           'Check to see if your abaqus-odb-tools directory is'...
+           ' correctly degined.']);
 end
 
 end

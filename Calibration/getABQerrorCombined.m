@@ -60,10 +60,11 @@ end
 % obtain the relevant test names
 testnames = testnames(testnums);
 
-% if this is the first time the function has been called, check that the 
-% testnames struct's contain all required fields
+% if this is the first time the function has been called, check some of the
+% user inputs to verify that they will work, before we begin time-consuming
+% analysis.
 if isempty(RUNCHECK)
-    checkRequiredFields(tests, testnames)
+    checkRequiredUserInputs(tests, testnames)
     RUNCHECK = false;
 end
 
