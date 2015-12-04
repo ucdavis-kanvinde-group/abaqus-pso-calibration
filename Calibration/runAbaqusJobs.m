@@ -53,11 +53,30 @@ while any(flags ~= 2)
                     % completed.
                     numRunning = numRunning - 1;
                     
-                    % rudimentary check on the output database
+                    % try to check if the job has completed successfully
                     d = dir([fileNames{i} '.odb']);
                     if d.bytes>1000000
-                        % seems okay, this job completed successfully.
+                        % seems okay based on size
                         flags(i) = 2;
+                        
+                        % now, check to see if the job has aborted.
+                        % open log file
+                        logfile = fopen([fileNames{i} '.log']);
+                        
+                        % obtain the strings in the log file
+                        logstr  = textscan(logfile,'%s');
+                        
+                        % the last string will indicate if Abaqus exited
+                        % with errors.
+                        if strcmpi(logstr{1}(end),'errors')
+                            % this means that the abaqus job has aborted.
+                            % To fix this issue, it would require user
+                            % intervention, so keep flags(i) = 2 (so search
+                            % can continue), but warn the user.
+                            warning( 'Job %s aborted with errors!', ...
+                                                             fileNames{i} )
+                        end
+                        
                     else
                         % something not right, try to resubmit the job.
                         flags(i) = 0;
@@ -66,8 +85,7 @@ while any(flags ~= 2)
                 end
                 
             otherwise
-                % implies flags(i) == 2
-                % so, this job has completed successfully.
+                % implies flags(i) == 2, so this job has completed.
                 % do nothing.
         end
     end
