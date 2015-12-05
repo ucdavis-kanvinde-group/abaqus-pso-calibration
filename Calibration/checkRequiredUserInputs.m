@@ -3,7 +3,7 @@
 % 11/30/15
 
 
-function checkRequiredFields(tests, testnames)
+function checkRequiredUserInputs(tests, testnames)
 % Checks that the tests you want to run have all of the required fields.
 % Also checks to see if your python path to abaqus-odb-tools is defined
 % properly and can execute.

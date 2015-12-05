@@ -63,8 +63,11 @@ while any(flags ~= 2)
                         % open log file
                         logfile = fopen([fileNames{i} '.log']);
                         
-                        % obtain the strings in the log file
+                        % scan to obtain the strings in the log file
                         logstr  = textscan(logfile,'%s');
+                        
+                        % after scan, close log file
+                        fclose(logfile);
                         
                         % the last string will indicate if Abaqus exited
                         % with errors.
