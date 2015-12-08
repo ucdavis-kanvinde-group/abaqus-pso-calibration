@@ -110,7 +110,7 @@ for iter = 1:niter
     
     %print iteration number, if requested
     if plotflag > 1
-        fprintf('\n*** Beginning Step %i ***\n',iter);
+        fprintf('\n*** Beginning PSO Iteration %i ***\n',iter);
     end
     
     %if desired, set inertia to linearly decrease
