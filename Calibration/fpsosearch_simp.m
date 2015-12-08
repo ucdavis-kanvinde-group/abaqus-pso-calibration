@@ -1,31 +1,45 @@
 % Simple Particle Swarm Optimization function
 % originally written by Chris Smith (2012)
-% updated, optimized, and comments added by Vince Pericoli (2015)
-
-
-% Particle Swarm "Multi-Input Single-Output" (MISO) optimization
-%ObjFun - function handle to objective function (like matlab opt routines)
-%lbound, ubound - vectors describing the size and bounds of param space
-%np - number of particles. Try 3-6 * the param space dimension
-%niter - number of iterations
-%gravity  - particle attractive force. Try 1.5
-%inertia - particle inertia. Try 0.55
-%errTol - stopping criteria. use -inf unless you know otherwise; this
-%         implies that the search will run until for niter iterations.
-%plotflag - plot results during? 1 or 0
-% startpos, plotflag, saveextra, errTol, refresh, startconstraint
-
+% updated and comments added by Vince Pericoli (2015)
 
 function [bestpos, bestval] = ...
     fpsosearch_simp(ObjFun, lbound, ubound, np, niter, gravity, ...
                     inertia, errTol, plotflag)
+%Particle Swarm "Multi-Input Single-Output" (MISO) optimization
+%INPUTS--
+%   ObjFun  : function handle to objective function (similar to other 
+%             MATLAB optimization routines)
+%   lbound  : vector describing the size and lower bound of parameter space
+%   ubound  : vector describing the size and upper bound of parameter space
+%   np      : number of particles. Try 3-6 * the param space dimension
+%   niter   : number of iterations
+%   gravity : particle attractive force (try 1.5). You can use a vector to
+%             specify a different value for global and local (sometimes
+%             referred to as "social" and "cognitive" learning rates in the
+%             literature).
+%   inertia : particle inertia (try [0.55, 0.275]). You can use a vector to
+%             specify a different value for the initial inertia and end
+%             inertia (treated as a linear variation over the steps)
+%   errTol  : stopping criteria. use -inf unless you know otherwise; this
+%             implies that the search will run until for niter iterations.
+%   plotflg : optional flag to specify whether to plot results or print 
+%             iteration number during the solution search. 0 = no plot or
+%             iteration print, 1 = plot, but do not print iteration, 2 =
+%             plot and print iteration number (Default).
+%OUTPUT--
+%   bestpos : the best (optimum) position of the particles located by the
+%             routine
+%   bestval : the best (optimum) value of the objective function, i.e. the
+%             objective function evaluated at bestpos.
+%
 
 %% Error Handling
-%perform a rudimentary check on lbound and ubound
+% perform a rudimentary check on lbound and ubound
 if length(ubound) ~= length(lbound)
-    %check sizes
+    % check sizes
     error('lbound and ubound are different sizes!');
-else
+elseif any(lbound > ubound)
+    % make sure lbound <= ubound
     for i = 1:length(ubound)
         %make sure lbound <= ubound
         if lbound(i) > ubound(i)
@@ -36,6 +50,11 @@ end
     
               
 %% INPUTS
+
+if nargin < 9
+    % plotflag default = 2
+    plotflag = 2;
+end
 
 %set the personal and global "gravity" or acceleration constants
 %   in some literature, this is referred to as social (global) 
@@ -88,6 +107,11 @@ end
 %% PSO
 for iter = 1:niter
     %for all iterations
+    
+    %print iteration number, if requested
+    if plotflag > 1
+        fprintf('\n*** Beginning Step %i ***\n',iter);
+    end
     
     %if desired, set inertia to linearly decrease
     inertia = inertia_init + (inertia_final - inertia_init)*(iter/niter);
