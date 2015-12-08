@@ -5,7 +5,7 @@
 % nconcur is an integer indicating how many jobs to run simultaneously
 function runAbaqusJobs(fileNames, nconcur)
 
-%keep track of runtime
+% keep track of runtime
 tic
 
 % keep track of number of currently running jobs
@@ -14,7 +14,7 @@ numRunning = 0;
 % total number of jobs that need to be run
 numFiles = length(fileNames);
 
-%initialize
+% initialize
 flags = zeros(numFiles,1);
 lastFlags = flags;
 
@@ -101,6 +101,13 @@ while any(flags ~= 2)
         % along with tic-toc, and update lastFlags
         fprintf(1,'%1.0f.', flags'); toc;
         lastFlags=flags;
+    end
+    
+    if toc > 7200
+        % if this has been going on for 2 hours without completion,
+        % something is probably wrong.
+        error(['runAbaqusJobs has been executing for %f seconds! ' ... 
+               'Something went wrong.',toc]);
     end
     
 end
