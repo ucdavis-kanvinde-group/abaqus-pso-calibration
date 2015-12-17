@@ -10,7 +10,7 @@ function [combinedError, errRatio, varargout] = ...
 % errortype = selector for internal error designation (see documentation or
 %             calcResidualError.m). Default = 4
 
-persistent RUNCHECK
+persistent RUNCHECK FHANDLE
 
 %
 % Recover Parameters from newparams ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -222,7 +222,12 @@ varargout{5} = CVGMfinal;
 % plot comparison of force-displacement ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 %
 
-figure(99)
+if isempty(FHANDLE)
+    FHANDLE = figure;
+else
+    figure(FHANDLE);
+end
+
 splotwidth  = ceil(sqrt(length(testnames)));
 splotheight = ceil(length(testnames)/splotwidth);
 
@@ -245,8 +250,5 @@ for i = 1:length(testnames)
                      testnames{i}, num2str(errRatio(i)));
     title(title_);
 end
-
-% save to file
-saveas(figure(99),'figure99');
 
 end
