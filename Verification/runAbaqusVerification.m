@@ -73,7 +73,7 @@ end
 testnames = testnames(testnums);
 
 % check that the testnames struct's contain all required fields
-checkRequiredFields(tests, testnames)
+checkRequiredUserInputs(tests, testnames)
 
 %
 % run the simulations ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -162,25 +162,7 @@ for i = 1:length(testnames)
     legend('ABAQUS','Test', 'Location','best');
     
     % save to disk
-    saveas(figure(i),testnames{i})
-    
-	%
-    % ALSO, plot into figure to compare, for each test type (mono/cyclic)
-    %
-    if  tests.(testnames{i}).cyclic
-        figure(100);
-        hold on;
-        plot(U2{i},RF2{i},'g', realdata(:,1),realdata(:,2),'b');
-        title('Cyclic Tests')
-        legend('ABAQUS','Tests', 'Location','best');
-    else
-        figure(101);
-        hold on;
-        plot(U2{i},RF2{i},'g', realdata(:,1),realdata(:,2),'b');
-        title('Monotonic Tests')
-        legend('ABAQUS','Tests', 'Location','best');
-    end
-        
+    saveas(figure(i),testnames{i})      
 end
 
 end
