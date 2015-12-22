@@ -14,3 +14,8 @@ His code did not have many comments, and was difficult for me to understand. I w
 
 ### Readme:
 coming soon... 
+
+example:
+[bestpos bestval] = fpsosearch_simp(@(params)getABQerrorCombined(params,  tests), lbound, ubound, np, niter, gravity, inertia, errTol, plotflag);
+
+
