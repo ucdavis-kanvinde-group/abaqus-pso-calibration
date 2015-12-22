@@ -169,8 +169,8 @@ if plotflag
     plot(gbest_hist,'bo')
     plot([1 iter], [gbestval gbestval],'r')
     
+    figure;
     for j=1:ndim
-        figure;
         subplot(3,ceil(ndim/3),j)
         plot(squeeze(ppos_hist(:,j,:))')
     end
