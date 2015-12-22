@@ -17,6 +17,7 @@ required_fields = {'force', 'displ', 'cyclic', 'template', 'history', ...
 %
 % for each testname, check for all required fields
 %
+missing_fields = struct();
 
 for i = 1:length(testnames)
     % for all testnames
@@ -38,17 +39,52 @@ for i = 1:length(testnames)
     end
 end
 
-if exist('missing_fields','var')
-    % if the missing_fields variable exists, then one or more testnames are
-    % missing some fields.
+if ~isempty(fieldnames(missing_fields))
+    % then one or more testnames are missing some fields.
     
     % save the missing_fields struct to the base workspace
     assignin('base', 'missing_fields', missing_fields)
     
     % alert the user and error-out
     error(['The input struct is missing some required fields--', ...
-           'see missing_fields for more info.'])
+           'see missing_fields for more info.']);
 end
+
+%
+% Now, check to see if the defined template input files exist
+%
+
+% obtain directory listing of input files (output is awkward structure)
+inpFiles = dir('*.inp');
+% convert this awkward structure into a cell
+inpFileCell = cell(size(inpFiles));
+for i = 1:length(inpFiles)
+    inpFileCell{i} = inpFiles(i).name;
+end
+
+% for each testname, check the validity of the input file template
+missing_files = {};
+
+for i = 1:length(testnames)
+    % for all testnames
+    
+    if all( strcmp(inpFileCell, tests.(testnames{i}).template) == 0)
+        % then the defined template does not exist!
+        missing_files{end+1} = tests.(testnames{i}).template; %#ok<AGROW>
+    end 
+end
+
+if ~isempty(missing_files)
+    % then one or more input files are missing or ill-defined
+    
+    % save the missing_files cell to the base workspace
+    assignin('base', 'missing_files', missing_files)
+    
+    % alert the user and error-out
+    error(['Some of the defined template input files do not exist ', ...
+           'in the current directory!']);
+end
+
 
 %
 % Now, try to execute the python function file, to see if it works.
