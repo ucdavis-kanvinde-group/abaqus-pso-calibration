@@ -22,10 +22,9 @@ function [bestpos, bestval] = ...
 %             inertia (treated as a linear variation over the steps)
 %   errTol  : stopping criteria. use -inf unless you know otherwise; this
 %             implies that the search will run until for niter iterations.
-%   plotflg : optional flag to specify whether to plot results or print 
-%             iteration number during the solution search. 0 = no plot or
-%             iteration print, 1 = plot, but do not print iteration, 2 =
-%             plot and print iteration number (Default).
+%   plotflg : optional flag to specify whether to plot the particle search
+%             path and optimum history (Default = true)
+%
 %OUTPUT--
 %   bestpos : the best (optimum) position of the particles located by the
 %             routine
@@ -52,8 +51,8 @@ end
 %% INPUTS
 
 if nargin < 9
-    % plotflag default = 2
-    plotflag = 2;
+    % plotflag default = true
+    plotflag = true;
 end
 
 %set the personal and global "gravity" or acceleration constants
@@ -108,10 +107,11 @@ end
 for iter = 1:niter
     %for all iterations
     
-    %print iteration number, if requested
-    if plotflag > 1
-        fprintf('\n*** Beginning PSO Iteration %i ***\n',iter);
-    end
+    %print iteration number, and send to base-workspace (sometimes the 
+    %print is unreadable if the window is full of text)
+    fprintf('\n*** Beginning PSO Iteration %i ***\n',iter);
+    assignin('base','curr_pso_iter',iter);
+    
     
     %if desired, set inertia to linearly decrease
     inertia = inertia_init + (inertia_final - inertia_init)*(iter/niter);
