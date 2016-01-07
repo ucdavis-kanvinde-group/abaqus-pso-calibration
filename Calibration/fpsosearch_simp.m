@@ -83,6 +83,7 @@ end
 %determine the number of dimensions of the problem
 ndim = length(ubound);
 
+
 %% INITIALIZATION
 
 %initialize storage arrays and values
@@ -192,7 +193,10 @@ end
 bestpos = gbestpos;
 bestval = gbestval;
 
-%% save output arguments
+%clear curr_pso_iter, since it is no longer relevant
+evalin('base','clear curr_pso_iter') 
+
+%% SAVE OUTPUT ARGS TO FILE
 % we don't want to overwrite previous results
 
 %figure out how many existing pso_results there are
