@@ -1,5 +1,5 @@
 function [params,RF2,U2] = runAbaqusVerification ... 
-                         (bestpos, bestval, tests, testnums, need_analysis)
+               (bestpos, bestval, tests, testnums, need_analysis, save_xls)
 % Provide your PSO results, and this function will return the "actual"
 % (non-transformed) Armstrong-Frederick Parameters. Additionally, it will
 % run an ABAQUS job with those parameters, and plot out the results so that
@@ -14,6 +14,9 @@ function [params,RF2,U2] = runAbaqusVerification ...
 % need_analysis = boolean indicating whether abaqus runs need to be
 %                 submitted (default = True). Otherwise it assumes you
 %                 already have run the analyses, and only want some plots.
+% save_xls  = boolean indicating whether you want to save the
+%             force-displacement information into an excel spreadsheet
+%             (default = False)
 
 %
 % Add Calibration path to search directory, so those functions can be used.
@@ -53,7 +56,7 @@ params = [Fy Qinf b C0 0 reshape([Cn;gamman],length(Cn)*2,1)'];
 save('AF_parameters.mat','params')
 
 %
-% rudimentary check on inputs ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+% check inputs ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 %
 
 % get all field names of the .mat struct
@@ -64,9 +67,15 @@ if (nargin < 4) || strcmpi(testnums,'all')
     % run all tests if not otherwise specified, or if 'all' specified
     testnums = 1:length(testnames);
 end
+
 if nargin < 5
     % default is to submit ABAQUS jobs
     need_analysis = true;
+end
+
+if nargin < 6
+    % default is to not save an excel spreadsheet
+    save_xls = false;
 end
 
 % obtain the relevant test names
@@ -154,15 +163,22 @@ for i = 1:length(testnames)
     plot(realdata(:,1), realdata(:,2));
     
     % give it a meaningful title
-    title_ = sprintf(' %s\n errRatio = %s', ...
+    title_ = sprintf(' %s\n combined error = %s', ...
                      testnames{i}, num2str(bestval));
     title(title_);
     
     % give it a meaningful legend
     legend('ABAQUS','Test', 'Location','best');
     
-    % save to disk
-    saveas(figure(i),testnames{i})      
+    % save plot to disk
+    saveas(figure(i),testnames{i})
+    
+    % if requested, save force-displacement data to excel spreadsheet
+    if save_xls
+        xlswrite('ForceDispl.xls',{'Displ','Force'},testnames{i},'A1:B1');
+        xlswrite('ForceDispl.xls',U2{i},testnames{i},'A2');
+        xlswrite('ForceDispl.xls',RF2{i},testnames{i},'B2');
+    end
 end
 
 end

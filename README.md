@@ -64,3 +64,5 @@ The algorithm will automatically modify the amplitude for each defined test, as 
 The algorithm also requires abaqus-odb-tools in order to extract data from the ABAQUS odb files. You can find that on GitHub as well: https://github.com/ucdavis-kanvinde-group/abaqus-odb-tools
 
 The algorithm has been tested to work with the v1.0.0-beta release, but the most up-to-date code should work fine. Once you have downloaded the abaqus-odb-tools distro, simply edit the odbFetchFieldOutput.py so that it points to the abaqus-odb-tools download location.
+
+The code execution speed could probably be improved significantly if it used the MATLAB Python engine, though the setup/installation becomes much more complicated.

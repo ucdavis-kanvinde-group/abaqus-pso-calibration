@@ -1,4 +1,4 @@
-function [combinedError, errRatio, varargout] = ...
+function [combinedError, errRatios, varargout] = ...
                  getABQerrorCombined(newparams, tests, testnums, errortype)
 % This is the Objective Function for applying optimization techniques
 %
@@ -16,28 +16,44 @@ persistent RUNCHECK FHANDLE
 % Recover Parameters from newparams ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 %
 
-%newparams(1) = Fy
-%newparams(2) = total hardening
-%newparams(3) = C0 (linear kinematic term)
-%newparams(4) = b (isotropic rate term)
-%newparams(5,7,...) = gamman (nth kinematic rate)
-%newparams(6,8,...) = fraction saturated hardening per ksi backstress
+% check if newparams comes from normalized PSO, or is actual AF params
+% (this is a disgusting hack)
+if mod(length(newparams),2) == 0
+    % length newparams is even, meaning it is a normalized PSO param vector
 
-Fy = newparams(1);
-C0 = newparams(3);
-b  = newparams(4);
-
-totalksi=0;
-for n = 1:( (length(newparams) - 4)/2 )
-    gamman(n) = newparams(2*n+3); %#ok<*AGROW>
-    Cn(n) = newparams(2) * newparams(2*n+4) * gamman(n);
-    totalksi = totalksi + newparams(2) * newparams(2*n+4);
+    % newparams(1) = Fy
+    % newparams(2) = total hardening
+    % newparams(3) = C0 (linear kinematic term)
+    % newparams(4) = b (isotropic rate term)
+    % newparams(5,7,...) = gamman (nth kinematic rate)
+    % newparams(6,8,...) = fraction saturated hardening per ksi backstress
     
+    Fy = newparams(1);
+    C0 = newparams(3);
+    b  = newparams(4);
+    
+    totalksi=0;
+    for n = 1:( (length(newparams) - 4)/2 )
+        % extract params, keeping track of total ksi for Qinf
+        gamman(n) = newparams(2*n+3); %#ok<*AGROW>
+        Cn(n) = newparams(2) * newparams(2*n+4) * gamman(n);
+        totalksi = totalksi + newparams(2) * newparams(2*n+4);
+        
+    end
+    % set Qinf
+    Qinf = newparams(2) - totalksi;
+    
+    % define AF params
+    params = [Fy Qinf b C0 0 reshape([Cn;gamman],length(Cn)*2,1)'];
+
+else
+    % length newparams is odd, meaning it is already set to be AF params
+    params = newparams;
+    
+    % in almost all cases, this is not what the user wants.
+    warning(['Input is inconsistent with normalized PSO parameters... ',...
+             '\ninstead, assuming they are pre-defined AF parameters.']);
 end
-Qinf = newparams(2) - totalksi;
-
-
-params = [Fy Qinf b C0 0 reshape([Cn;gamman],length(Cn)*2,1)'];
 
 %
 % rudimentary check on parameters ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -79,7 +95,7 @@ CVGMfinal = nanvec;
 if any( params < 0 )
     % if any parameters are less than zero, return nothing
     combinedError = 1;
-    errRatio = 1;
+    errRatios = 1;
     varargout{1} = PEEQfinal;
     varargout{2} = Tfinal;
     varargout{3} = Xfinal;
@@ -125,8 +141,8 @@ if ishandle(msghandle)
 end
 
 % preallocate the error and error ratio
-err      = ones(size(testnames));
-errRatio = err;
+err       = ones(size(testnames));
+errRatios = err;
 
 % obtain the error for each test/simulation
 fprintf('Extracting Errors from ODBs...');
@@ -148,13 +164,13 @@ for i = 1:length(testnames)
     end
     
     % calculate the residual error for this simulation
-    [err(i), errRatio(i), forceDispl{i}] = ...
+    [err(i), errRatios(i), forceDispl{i}] = ...
                  calcResidualError(fileID, realdata, errortype, rxNodeSet);
 end
 fprintf(' Done!\n');
 
 % sum up the error for the PSO algorithm
-combinedError = sum(errRatio);
+combinedError = sum(errRatios);
 
 %
 % save parameter and error data to a .mat struct ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -247,7 +263,7 @@ for i = 1:length(testnames)
     
     % give it a meaningful title
     title_ = sprintf(' %s\n errRatio = %s', ...
-                     testnames{i}, num2str(errRatio(i)));
+                     testnames{i}, num2str(errRatios(i)));
     title(title_);
 end
 
