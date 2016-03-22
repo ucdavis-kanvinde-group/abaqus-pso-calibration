@@ -52,7 +52,7 @@ else
     
     % in almost all cases, this is not what the user wants.
     warning(['Input is inconsistent with normalized PSO parameters... ',...
-             '\ninstead, assuming they are pre-defined AF parameters.']);
+             'instead, assuming they are pre-defined AF parameters.']);
 end
 
 %
@@ -63,12 +63,12 @@ end
 testnames = fieldnames(tests);
 
 % check the requested inputs...
-if (nargin < 3) || strcmpi(testnums,'all')
+if (nargin < 3) || strcmpi(testnums,'all') || isempty(testnums)
     % run all tests if not otherwise specified
     testnums = 1:length(testnames);
 end
 
-if nargin < 4
+if (nargin < 4) || isempty(errortype)
     % default to error type 4 if not otherwise specified
     errortype = 4;
 end
