@@ -50,42 +50,44 @@ while any(flags ~= 2)
                 % this job has been submitted
                 if ~exist([fileNames{i} '.lck'], 'file')
                     % if an abaqus lock file does not exist, the job has
-                    % completed.
+                    % completed (or otherwise exited).
                     numRunning = numRunning - 1;
                     
-                    % try to check if the job has completed successfully
+                    % try to check if the job has completed successfully...
+                    % perform two checks: 
+                    % (1) check if job has aborted, (2) check ODB filesize
+                    
+                    % to check if job has aborted, read the log file:
+                    % open log file
+                    logfile = fopen([fileNames{i} '.log']);
+                    % scan to obtain the strings in the log file
+                    logstr  = textscan(logfile,'%s');
+                    % after scan, close log file
+                    fclose(logfile);
+                    
+                    % to check filesize, read the dir information:
                     d = dir([fileNames{i} '.odb']);
-                    if d.bytes>1000000
-                        % seems okay based on size
-                        flags(i) = 2;
+                    
+                    % the last string of log file will indicate if Abaqus 
+                    % exited/aborted with errors.
+                    if strcmpi(logstr{1}(end),'errors')
+                        % this means that the abaqus job has aborted.
+                        % To fix this issue, it would require user
+                        % intervention... halt search.
+                        error('Job %s aborted with errors!',fileNames{i});
                         
-                        % now, check to see if the job has aborted.
-                        % open log file
-                        logfile = fopen([fileNames{i} '.log']);
-                        
-                        % scan to obtain the strings in the log file
-                        logstr  = textscan(logfile,'%s');
-                        
-                        % after scan, close log file
-                        fclose(logfile);
-                        
-                        % the last string will indicate if Abaqus exited
-                        % with errors.
-                        if strcmpi(logstr{1}(end),'errors')
-                            % this means that the abaqus job has aborted.
-                            % To fix this issue, it would require user
-                            % intervention, so keep flags(i) = 2 (so search
-                            % can continue), but warn the user.
-                            warning( 'Job %s aborted with errors!', ...
-                                                             fileNames{i} )
-                        end
-                        
-                    else
+                    elseif d.bytes < 1000000 % < 1MB
                         % something not right, try to resubmit the job.
                         flags(i) = 0;
                         disp('something wrong, trying again')
+                        
+                    else
+                        % seems okay. continue search.
+                        flags(i) = 2;
                     end
                 end
+                % if .lck file still exists, then the job is still running.
+                % in that case, do nothing (i.e. flags(i) remains 1)
                 
             otherwise
                 % implies flags(i) == 2, so this job has completed.
