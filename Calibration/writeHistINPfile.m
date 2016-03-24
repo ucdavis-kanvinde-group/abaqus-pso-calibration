@@ -83,7 +83,7 @@ while ~feof(templfid)
         % figure out what the name of that amplitude keyword is
         C = strsplit(tmpline, ', ');
         ampName = C{2}(6:end);
-        ampName = strrep(ampName,'\n',''); % strip any newlines
+        ampName = strrep(ampName,sprintf('\n'),''); % strip any newlines
         
         % write our desired Amplitude information (preserve ampName)
         fprintf(targfid, ['*Amplitude, name=', ampName, '\n']);
