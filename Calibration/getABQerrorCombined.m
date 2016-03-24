@@ -241,7 +241,13 @@ varargout{5} = CVGMfinal;
 if isempty(FHANDLE)
     FHANDLE = figure;
 else
-    figure(FHANDLE);
+    % need try-catch statement for an extremely rare bug where sometimes
+    % FHANDLE is defined but invalid
+    try
+        figure(FHANDLE);
+    catch
+        FHANDLE = figure;
+    end
 end
 
 splotwidth  = ceil(sqrt(length(testnames)));
