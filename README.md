@@ -4,7 +4,7 @@ Optimal calibration of continuum cyclic constitutive model using Particle Swarm 
 ## For information, please read:
 Smith, C.M., Kanvinde, A.M., Deierlein, G.G. (2013) *Optimal calibration of continuum cyclic constitutive model for structural steel using Particle Swarm Optimization*, Journal of Structural Engineering
 
-## About this distro:
+## About this repo:
 Originally developed by Chris Smith (2013). His original code can be found here:
 
 http://purl.stanford.edu/qy227tf3022
