@@ -31,6 +31,8 @@ if mod(length(newparams),2) == 0
     Fy = newparams(1);
     C0 = newparams(3);
     b  = newparams(4);
+    Cn = [];
+    gamman = [];
     
     totalksi=0;
     for n = 1:( (length(newparams) - 4)/2 )
