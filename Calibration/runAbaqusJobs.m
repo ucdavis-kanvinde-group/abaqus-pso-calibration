@@ -5,6 +5,9 @@
 % nconcur is an integer indicating how many jobs to run simultaneously
 function runAbaqusJobs(fileNames, nconcur)
 
+% irregular function termination), the cleanup function will execute.
+cleanupObj = onCleanup(@() cleanupJobs());
+
 % keep track of runtime
 tic
 
@@ -110,6 +113,29 @@ while any(flags ~= 2)
         % something is probably wrong.
         error(['runAbaqusJobs has been executing for %f seconds! ' ... 
                'Something went wrong.',toc]);
-    end
+    end 
+end
+
+return;
+end
+
+function cleanupJobs()
+% kill any running jobs
+
+dir_list = dir;
+Ndirs = length(dir_list);
+
+for d = 1:Ndirs
+    % skip directories
+    if dir_list(d).isdir, continue; end
     
+    [~,jobName,ext] = fileparts(dir_list(d).name);
+    if strcmp(ext,'.lck')
+        % this job is still running. send kill command.
+        system(['abaqus terminate job=',jobName]);
+        pause(1);
+    end
+end
+
+return;
 end
