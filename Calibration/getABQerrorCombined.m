@@ -1,4 +1,4 @@
-function [combinedError, errRatios, varargout] = ...
+function [combinedError, errRatios] = ...
                  getABQerrorCombined(newparams, tests, testnums, errortype)
 % This is the Objective Function for applying optimization techniques
 %
@@ -13,7 +13,8 @@ function [combinedError, errRatios, varargout] = ...
 persistent RUNCHECK FHANDLE
 
 %
-% Recover Parameters from newparams ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+% Recover Parameters from newparams
 %
 
 % check if newparams comes from normalized PSO, or is actual AF params
@@ -53,12 +54,16 @@ else
     params = newparams;
     
     % in almost all cases, this is not what the user wants.
-    warning(['Input is inconsistent with normalized PSO parameters... ',...
-             'instead, assuming they are pre-defined AF parameters.']);
+    fprintf('\n')
+    fprintf(2, ['getABQerrorCombined :: Input is inconsistent with ',   ...
+                'normalized PSO parameters... \n',                      ...
+                'instead, assuming they are pre-defined AF parameters.']);
+	fprintf('\n')
 end
 
 %
-% rudimentary check on parameters ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+% rudimentary check on parameters
 %
 
 % get all field names of the .mat struct
@@ -86,30 +91,18 @@ if isempty(RUNCHECK)
     RUNCHECK = false;
 end
 
-% preallocate fracture mechanics output (necessary if any params < 0)
-nanvec    = NaN * ones(1,length(testnums));
-PEEQfinal = nanvec;
-Tfinal    = nanvec;
-Xfinal    = nanvec;
-SMCSfinal = nanvec;
-CVGMfinal = nanvec;
-
+% if any parameters are less than zero, return nothing 
+% (hard wall for optimization)
 if any( params < 0 )
-    % if any parameters are less than zero, return nothing
     combinedError = 1;
     errRatios = 1;
-    varargout{1} = PEEQfinal;
-    varargout{2} = Tfinal;
-    varargout{3} = Xfinal;
-    varargout{4} = SMCSfinal;
-    varargout{5} = CVGMfinal;
-
-    disp('Out of bounds')
+    fprintf(2,'\ngetABQerrorCombined :: Parameters are out of bounds\n');
     return;
 end
 
 %
-% calculate the combined error ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+% calculate the combined error
 %
 
 % display information for user
@@ -175,7 +168,8 @@ fprintf(' Done!\n');
 combinedError = sum(errRatios);
 
 %
-% save parameter and error data to a .mat struct ~~~~~~~~~~~~~~~~~~~~~~~~~~
+% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+% save parameter and error data to a .mat struct
 %
 alldata = struct('params',params, 'newparams',newparams, ...
                  'combinedError',combinedError);
@@ -193,51 +187,24 @@ end
 save historyData historyData
 
 %
-% if requested, perform fracture mechanics calcs ~~~~~~~~~~~~~~~~~~~~~~~~~~
+% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+% fracture mech calcs are no longer supported. this is just leftover from
+% Chris' original code
 %
-
-fprintf('Extracting Fracture Mechanics Data, if requested...');
 for i = 1:length(testnames)
     if ~isfield(tests.(testnames{i}),'getIntPtData')
         % if no field is defined, assume calcs not wanted
         continue
-    end
-    
-    % otherwise, check if they are requested...
-    if tests.(testnames{i}).getIntPtData
-        IntPtNodeSet = tests.(testnames{i}).IntPtNodeSet;
-        [~, PEEQ, Mises, Pressure, Inv3] = ...
-                                   fetchOdbIntPtData(fileID, IntPtNodeSet);
-    
-
-        % triaxiality, PEEQ, and ... some other thing?
-        % not sure what the cube of inv3/mises is. (something Chris wrote)
-        PEEQfinal(i) =   PEEQ(end);
-        Tfinal(i)    = - Pressure(end) / Mises(end); % triaxiality
-        Xfinal(i)    =   ( Inv3(end) / Mises(end) )^3;
-        
-        % triaxiality history
-        T = - Pressure(:) ./ Mises(:);
-        T(isnan(T)) = 0; % if Mises is 0, triax is NaN
-        
-        % calculate SMCS and CVGM. See Kanvinde and Deierlein (2007)
-        SMCSfinal(i) = PEEQfinal(i) / exp(-1.5*Tfinal(i));
-        CVGMfinal(i) = sum( exp(1.5*abs(T)).*sign(T).*[0; diff(PEEQ)] ) ... 
-                       / exp(-.47*sum([0; diff(PEEQ)].*(T<0)));
+    elseif tests.(testnames{i}).getIntPtData
+        % otherwise, check if they are requested...
+        fprintf(2,['\nfracture calculations are no longer supported. ', ...
+                   'skipping...\n']);
     end
 end
-fprintf(' Done!\n');
-
-% assign output to varargout
-varargout{1} = PEEQfinal;
-varargout{2} = Tfinal;
-varargout{3} = Xfinal;
-varargout{4} = SMCSfinal;
-varargout{5} = CVGMfinal;
-
 
 %
-% plot comparison of force-displacement ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+% plot comparison of force-displacement
 %
 
 if isempty(FHANDLE)

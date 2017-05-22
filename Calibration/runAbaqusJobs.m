@@ -5,6 +5,7 @@
 % nconcur is an integer indicating how many jobs to run simultaneously
 function runAbaqusJobs(fileNames, nconcur)
 
+% create cleanup object. when this object is destroyed (on either normal or
 % irregular function termination), the cleanup function will execute.
 cleanupObj = onCleanup(@() cleanupJobs());
 

@@ -94,6 +94,10 @@ pbestpos = ppos;            %particle best position
 pbestval = inf*ones(np,1); %particle best value (begin infinitely large)
 pval     = zeros(np,1);    %particle's current ObjFun value
 gbestval = inf;            %absolute global best ObjFun value
+gbestpos = NaN(size(ppos));%absolute global best parameter position
+
+% initialize cleanup object
+cleanupObj = onCleanup(@() psocleanup(gbestpos));
 
 %furthermore, preallocate some "history" arrays for plotting purposes
 ppos_hist  = zeros(np,ndim,niter);
@@ -183,9 +187,9 @@ h = get(0,'children');
 for i = 1:length(h)
     fname = get(h(i),'Name');
     if isempty(fname)
-        saveas(h(i),['figure' num2str(get(h(i),'Number'))]);
+        saveas(h(i),['figure' num2str(get(h(i),'Number'))],'pdf');
     else
-        saveas(h(i),fname);
+        saveas(h(i),fname,'pdf');
     end
 end
 
@@ -212,5 +216,12 @@ end
 
 %save to binary .mat using the above name
 save(save_name,'bestpos','bestval');
+return;
+end
 
+function psocleanup(gbestpos)
+
+assignin('base','last_known_best_position',gbestpos);
+
+return;
 end
