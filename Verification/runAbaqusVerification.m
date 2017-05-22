@@ -22,41 +22,64 @@ function [params,RF2,U2] = runAbaqusVerification ...
 % Add Calibration path to search directory, so those functions can be used.
 %
 calib_dir = strrep(pwd, 'Verification', 'Calibration');
-addpath(calib_dir);
-
-%
-% Recover Parameters from bestpos ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-%
-
-%bestpos(1)       = Fy
-%bestpos(2)       = total hardening
-%bestpos(3)       = C0 (linear kinematic term)
-%bestpos(4)       = b (isotropic rate term)
-%bestpos(5,7,...) = gamman (nth kinematic rate)
-%bestpos(6,8,...) = fraction saturated hardening per ksi backstress
-
-Fy = bestpos(1);
-C0 = bestpos(3);
-b  = bestpos(4);
-
-totalksi=0;
-for n = 1:( (length(bestpos) - 4)/2 )
-    %extract params, keeping track of total ksi for Qinf
-    gamman(n) = bestpos(2*n+3); %#ok<*AGROW>
-    Cn(n)     = bestpos(2) * bestpos(2*n+4) * gamman(n);
-    totalksi  = totalksi + bestpos(2) * bestpos(2*n+4);
+if ( exist(calib_dir,'dir') == 7 )
+    addpath(calib_dir);
+else
+    addpath('..');
 end
-% set Qinf
-Qinf = bestpos(2) - totalksi;
 
-% define params
-params = [Fy Qinf b C0 0 reshape([Cn;gamman],length(Cn)*2,1)'];
+%
+% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+% Recover Parameters from bestpos
+%
 
+% check if bestpos comes from normalized PSO, or is actual AF params
+% (this is a disgusting hack)
+if mod(length(newparams),2) == 0
+    % length newparams is even, meaning it is a normalized PSO param vector
+    
+    %bestpos(1)       = Fy
+    %bestpos(2)       = total hardening
+    %bestpos(3)       = C0 (linear kinematic term)
+    %bestpos(4)       = b (isotropic rate term)
+    %bestpos(5,7,...) = gamman (nth kinematic rate)
+    %bestpos(6,8,...) = fraction saturated hardening per ksi backstress
+
+    Fy = bestpos(1);
+    C0 = bestpos(3);
+    b  = bestpos(4);
+
+    totalksi=0;
+    for n = 1:( (length(bestpos) - 4)/2 )
+        %extract params, keeping track of total ksi for Qinf
+        gamman(n) = bestpos(2*n+3); %#ok<*AGROW>
+        Cn(n)     = bestpos(2) * bestpos(2*n+4) * gamman(n);
+        totalksi  = totalksi + bestpos(2) * bestpos(2*n+4);
+    end
+    % set Qinf
+    Qinf = bestpos(2) - totalksi;
+
+    % define params
+    params = [Fy Qinf b C0 0 reshape([Cn;gamman],length(Cn)*2,1)'];
+
+else
+    % length newparams is odd, meaning it is already set to be AF params
+    params = newparams;
+    
+    % in almost all cases, this is not what the user wants.
+    fprintf('\n')
+    fprintf(2, ['runAbaqusVerification :: Input is inconsistent with ', ...
+                'normalized PSO parameters... \n',                      ...
+                'instead, assuming they are pre-defined AF parameters.']);
+	fprintf('\n')
+end
+ 
 % save params
 save('AF_parameters.mat','params')
 
 %
-% check inputs ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+% check inputs
 %
 
 % get all field names of the .mat struct
@@ -85,7 +108,8 @@ testnames = testnames(testnums);
 checkRequiredUserInputs(tests, testnames)
 
 %
-% run the simulations ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+% run the simulations
 %
 if need_analysis
     % display information for user
@@ -120,7 +144,11 @@ if need_analysis
 
 end
 
+%
+% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 % compare the displacement curves for each test/simulation
+%
+fprintf('Comparing displacement curves... ');
 for i = 1:length(testnames)
     
     %
@@ -171,7 +199,7 @@ for i = 1:length(testnames)
     legend('ABAQUS','Test', 'Location','best');
     
     % save plot to disk
-    saveas(figure(i),testnames{i})
+    saveas(figure(i),testnames{i},'pdf')
     
     % if requested, save force-displacement data to excel spreadsheet
     if save_xls
@@ -180,5 +208,7 @@ for i = 1:length(testnames)
         xlswrite('ForceDispl.xls',RF2{i},testnames{i},'B2');
     end
 end
+fprintf('Done!');
 
+return;
 end
