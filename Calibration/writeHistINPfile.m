@@ -9,14 +9,12 @@ function writeHistINPfile(template, target, testdata)
 % set the total time and step sizes ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 %
 if testdata.cyclic
-    % set each peak to be 0.1 of total time
+    % set each peak to be 0.1 of total time.
+    % this was set to mimic Chris' initial settings.
     peak_inc  = 0.1;
     totaltime = ( length(testdata.history)-1 ) * peak_inc;
-    % this was set to mimic Chris' initial settings... since the
-    % initial step is set to 0.001, it seems that there would be 100
-    % steps per cycle (or more, if required for convergence)
-    init_step = 0.005;
-    max_step  = 0.005;
+    init_step = 0.0035;
+    max_step  = 0.0035;
 else
     % set step sizes so that there are 1000 total steps for the pull
     peak_inc  = 1.0;
