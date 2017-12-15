@@ -4,7 +4,7 @@
 
 function [bestpos, bestval] = ...
     fpsosearch_simp(ObjFun, lbound, ubound, np, niter, gravity, ...
-                    inertia, errTol, plotflag)
+                    inertia, errTol, plotflag, dumpflag)
 %Particle Swarm "Multi-Input Single-Output" (MISO) optimization
 %INPUTS--
 %   ObjFun  : function handle to objective function (similar to other 
@@ -24,6 +24,10 @@ function [bestpos, bestval] = ...
 %             implies that the search will run until for niter iterations.
 %   plotflg : optional flag to specify whether to plot the particle search
 %             path and optimum history (Default = true)
+%   dumpflg : optional flag to specify whether to dump intermediate results 
+%             to disk, in case of error (Default = true). This is useful if
+%             objective function is expensive. In the future, we can fully
+%             implement a restart feature.
 %
 %OUTPUT--
 %   bestpos : the best (optimum) position of the particles located by the
@@ -50,10 +54,9 @@ end
               
 %% INPUTS
 
-if nargin < 9
-    % plotflag default = true
-    plotflag = true;
-end
+% set defaults
+if nargin <  9, plotflag = true; end
+if nargin < 10, dumpflag = true; end
 
 %set the personal and global "gravity" or acceleration constants
 %   in some literature, this is referred to as social (global) 
@@ -94,7 +97,7 @@ pbestpos = ppos;            %particle best position
 pbestval = inf*ones(np,1); %particle best value (begin infinitely large)
 pval     = zeros(np,1);    %particle's current ObjFun value
 gbestval = inf;            %absolute global best ObjFun value
-gbestpos = NaN(size(ppos));%absolute global best parameter position
+gbestpos = zeros(1,ndim);  %absolute global best parameter position
 
 % initialize cleanup object
 cleanupObj = onCleanup(@() psocleanup(gbestpos));
@@ -115,8 +118,6 @@ for iter = 1:niter
     %print iteration number, and send to base-workspace (sometimes the 
     %print is unreadable if the window is full of text)
     fprintf('\n*** Beginning PSO Iteration %i ***\n',iter);
-    assignin('base','curr_pso_iter',iter);
-    
     
     %if desired, set inertia to linearly decrease
     inertia = inertia_init + (inertia_final - inertia_init)*(iter/niter);
@@ -158,6 +159,11 @@ for iter = 1:niter
     
     gbest_hist(iter) = gbestval; %keep history of all gbestval for plotting
     
+    % save last known best position, if requested
+    if( dumpflag )
+        save('last_known_best_position.mat','gbestpos','iter')
+    end
+    
     if gbestval < errTol
         %if the global best is lower than user-defined tolerance,
         %terminate search.
@@ -197,9 +203,6 @@ end
 bestpos = gbestpos;
 bestval = gbestval;
 
-%clear curr_pso_iter, since it is no longer relevant
-evalin('base','clear curr_pso_iter') 
-
 %% SAVE OUTPUT ARGS TO FILE
 % we don't want to overwrite previous results
 
@@ -216,12 +219,9 @@ end
 
 %save to binary .mat using the above name
 save(save_name,'bestpos','bestval');
-return;
-end
 
-function psocleanup(gbestpos)
-
-assignin('base','last_known_best_position',gbestpos);
+%% cleanup
+delete('last_known_best_position.mat')
 
 return;
 end
