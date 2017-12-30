@@ -22,7 +22,7 @@ persistent RUNCHECK FHANDLE
 if mod(length(newparams),2) == 0
     % length newparams is even, meaning it is a normalized PSO param vector
 
-    % newparams(1) = Fy
+    % newparams(1) = sig_yield
     % newparams(2) = total hardening
     % newparams(3) = C0 (linear kinematic term)
     % newparams(4) = b (isotropic rate term)
@@ -51,6 +51,12 @@ if mod(length(newparams),2) == 0
 
 else
     % length newparams is odd, meaning it is already set to be AF params
+    % this means that:
+    %   params(1) = sig_yield
+    %   params(2) = Qinf
+    %   params(3) = b
+    %   params(4,6,8,...) = C_i
+    %   params(5,7,9,...) = gamma_i
     params = newparams;
     
     % in almost all cases, this is not what the user wants.
