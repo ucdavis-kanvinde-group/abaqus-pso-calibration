@@ -36,83 +36,147 @@ function [bestpos, bestval] = ...
 %             objective function evaluated at bestpos.
 %
 
-%% Error Handling
-% perform a rudimentary check on lbound and ubound
-if length(ubound) ~= length(lbound)
-    % check sizes
-    error('lbound and ubound are different sizes!');
-elseif any(lbound > ubound)
-    % make sure lbound <= ubound
-    for i = 1:length(ubound)
-        %make sure lbound <= ubound
-        if lbound(i) > ubound(i)
-            error('lbound(%i) > ubound(%i)',i,i);
+%
+% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+% Check Input Args, set defaults.
+%
+
+if( (nargin == 2) && isstruct(lbound) )
+    % then this is a restart file input
+    restart_from_prev = true;
+    restart_struct = lbound;
+    clear('lbound');
+    
+else
+    % then this is a standard input.
+    restart_from_prev = false;
+    
+    % set defaults
+    if nargin <  9, plotflag = true; end
+    if nargin < 10, dumpflag = true; end
+
+    %set the personal and global "gravity" or acceleration constants
+    %   in some literature, this is referred to as social (global) 
+    %   and cognitive (personal) learning rates
+    if length(gravity) == 1
+        ggrav = gravity;
+        pgrav = gravity;
+    elseif length(gravity) == 2
+        ggrav = gravity(1);
+        pgrav = gravity(2);
+    else
+        error('Error in gravity definition');
+    end
+
+    %set the inertia weight
+    %can be specified as constant or linearly decreasing
+    if length(inertia) == 1
+        inertia_init  = inertia;
+        inertia_final = inertia;
+    elseif length(inertia) == 2
+        inertia_init  = inertia(1);
+        inertia_final = inertia(2);
+    else
+        error('Error in inertia definition');
+    end
+
+    %determine the number of dimensions of the problem
+    ndim = length(ubound);
+end
+
+%
+% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+% Error Handling
+%
+
+if( ~restart_from_prev )
+    % perform a rudimentary check on lbound and ubound
+    if length(ubound) ~= length(lbound)
+        % check sizes
+        error('lbound and ubound are different sizes!');
+    elseif any(lbound > ubound)
+        % make sure lbound <= ubound
+        for i = 1:length(ubound)
+            %make sure lbound <= ubound
+            if lbound(i) > ubound(i)
+                error('lbound(%i) > ubound(%i)',i,i);
+            end
         end
     end
 end
+
+% check objective function
+if( ~isa(ObjFun,'function_handle') )
+    error('ObjFun is not a valid MATLAB function handle!')
+end 
+
+%
+% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+% Initialization
+%
+
+
+if( restart_from_prev )
+    % initialize to the previously saved state!
+    % see below for descriptions of variables.
     
-              
-%% INPUTS
-
-% set defaults
-if nargin <  9, plotflag = true; end
-if nargin < 10, dumpflag = true; end
-
-%set the personal and global "gravity" or acceleration constants
-%   in some literature, this is referred to as social (global) 
-%   and cognitive (personal) learning rates
-if length(gravity) == 1
-    ggrav = gravity;
-    pgrav = gravity;
-elseif length(gravity) == 2
-    ggrav = gravity(1);
-    pgrav = gravity(2);
+    % set input vars
+    np       = restart_struct.np;
+    niter    = restart_struct.niter;
+    pgrav    = restart_struct.pgrav;
+    ggrav    = restart_struct.ggrav;
+    errTol   = restart_struct.errTol;
+    plotflag = restart_struct.plotflag;
+    dumpflag = restart_struct.dumpflag;
+    inertia_init  = restart_struct.inertia_init;
+    inertia_final = restart_struct.inertia_final;
+    
+    % set state vars
+    start_iter = 1 + restart_struct.last_good_iter;
+    ppos       = restart_struct.ppos;
+    pvel       = restart_struct.pvel;
+    pbestpos   = restart_struct.pbestpos;
+    pbestval   = restart_struct.pbestval;
+    pval       = restart_struct.pval;
+    gbestval   = restart_struct.gbestval;
+    gbestpos   = restart_struct.gbestpos;
+    ppos_hist  = restart_struct.ppos_hist;
+    gbest_hist = restart_struct.gbest_hist;
+    
+    % set ndim
+    ndim = size(ppos,2);
+    
 else
-    error('Error in gravity definition');
+    % initialize to fresh state.    
+    start_iter = 1;
+    
+    % initialize storage arrays and values
+    ppos     = zeros(np, ndim); %particle position (in the parameter space)
+    pvel     = zeros(np, ndim); %particle velocity
+    pbestpos = zeros(np, ndim); %particle best position
+
+    pbestval = inf*ones(np,1); %particle best value (begin infinitely large)
+    pval     = zeros(np,1);    %particle's current ObjFun value
+    gbestval = inf;            %absolute global best ObjFun value
+    gbestpos = zeros(1,ndim);  %absolute global best parameter position
+
+    %furthermore, preallocate some "history" arrays for plotting purposes
+    ppos_hist  = zeros(np,ndim,niter);
+    gbest_hist = zeros(1,niter);
+
+    %initialize the particles to random positions throughout the space
+    for i = 1:np
+        ppos(i,:) = rand(1,ndim).*(ubound-lbound) + lbound;
+    end
+    
 end
 
-%set the inertia weight
-%can be specified as constant or linearly decreasing
-if length(inertia) == 1
-    inertia_init  = inertia;
-    inertia_final = inertia;
-elseif length(inertia) == 2
-    inertia_init  = inertia(1);
-    inertia_final = inertia(2);
-else
-    error('Error in inertia definition');
-end
+%
+% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+% particle swarm
+%
 
-%determine the number of dimensions of the problem
-ndim = length(ubound);
-
-
-%% INITIALIZATION
-
-%initialize storage arrays and values
-ppos     = zeros(np, ndim); %particle position (in the parameter space)
-pvel     = zeros(np, ndim); %particle velocity
-pbestpos = ppos;            %particle best position
-
-pbestval = inf*ones(np,1); %particle best value (begin infinitely large)
-pval     = zeros(np,1);    %particle's current ObjFun value
-gbestval = inf;            %absolute global best ObjFun value
-gbestpos = zeros(1,ndim);  %absolute global best parameter position
-
-% initialize cleanup object
-cleanupObj = onCleanup(@() psocleanup(gbestpos));
-
-%furthermore, preallocate some "history" arrays for plotting purposes
-ppos_hist  = zeros(np,ndim,niter);
-gbest_hist = zeros(1,niter);
-
-%initialize the particles to random positions throughout the space
-for i = 1:np
-    ppos(i,:) = rand(1,ndim).*(ubound-lbound) + lbound;
-end
-
-%% PSO
-for iter = 1:niter
+for iter = start_iter:niter
     %for all iterations
     
     %print iteration number, and send to base-workspace (sometimes the 
@@ -159,15 +223,25 @@ for iter = 1:niter
     
     gbest_hist(iter) = gbestval; %keep history of all gbestval for plotting
     
-    % save last known best position, if requested
-    if( dumpflag )
-        save('last_known_best_position.mat','gbestpos','iter')
-    end
-    
     if gbestval < errTol
         %if the global best is lower than user-defined tolerance,
         %terminate search.
         break;
+    end
+    
+    % save last known best position and restart file, if requested
+    if( dumpflag )
+        last_good_iter = iter; %#ok<NASGU>
+        save('last_known_best_position.mat','gbestpos','last_good_iter')
+        save('last_known_best_state.mat', ...
+                ... % state vars
+                'last_good_iter', 'ppos', 'pvel', 'pbestpos', ...
+                'pbestval', 'pval', 'gbestval', 'gbestpos',   ...
+                'ppos_hist', 'gbest_hist',                    ...
+                ... % input vars
+                'np', 'niter', 'pgrav', 'ggrav',    ...
+                'inertia_init', 'inertia_final',    ...
+                'errTol', 'plotflag', 'dumpflag' )
     end
 end
 
@@ -203,7 +277,11 @@ end
 bestpos = gbestpos;
 bestval = gbestval;
 
-%% SAVE OUTPUT ARGS TO FILE
+%
+% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+% Save output args to file.
+%
+
 % we don't want to overwrite previous results
 
 %figure out how many existing pso_results there are
@@ -220,8 +298,12 @@ end
 %save to binary .mat using the above name
 save(save_name,'bestpos','bestval');
 
-%% cleanup
+%
+% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+% clean up
+%
 delete('last_known_best_position.mat')
+delete('last_known_best_state.mat')
 
 return;
 end
