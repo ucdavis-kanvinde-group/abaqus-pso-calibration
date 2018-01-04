@@ -14,7 +14,7 @@ numFiles = length(fileNames);
 
 % define the error conditions
 MAX_RESTART = 5;
-MAX_RUNTIME = 20 * numFiles; % 20 mins per job
+MAX_RUNTIME = 1200 * numFiles; % 20 mins per job
 
 % keep track of number of restarted jobs
 numRestart  = 0;
