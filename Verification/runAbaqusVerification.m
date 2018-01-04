@@ -38,12 +38,12 @@ end
 if mod(length(bestpos),2) == 0
     % length bestpos is even, meaning it is a normalized PSO param vector
     
-    %bestpos(1)       = Fy
-    %bestpos(2)       = total hardening
-    %bestpos(3)       = C0 (linear kinematic term)
-    %bestpos(4)       = b (isotropic rate term)
-    %bestpos(5,7,...) = gamman (nth kinematic rate)
-    %bestpos(6,8,...) = fraction saturated hardening per ksi backstress
+    % bestpos(1)       = sig_yield
+    % bestpos(2)       = total hardening
+    % bestpos(3)       = C0 (linear kinematic term)
+    % bestpos(4)       = b (isotropic rate term)
+    % bestpos(5,7,...) = gamman (nth kinematic rate)
+    % bestpos(6,8,...) = fraction saturated hardening per ksi backstress
 
     Fy = bestpos(1);
     C0 = bestpos(3);
@@ -64,6 +64,12 @@ if mod(length(bestpos),2) == 0
 
 else
     % length bestpos is odd, meaning it is already set to be AF params
+    % this means that:
+    %   params(1) = sig_yield
+    %   params(2) = Qinf
+    %   params(3) = b
+    %   params(4,6,8,...) = C_i
+    %   params(5,7,9,...) = gamma_i
     params = bestpos;
     
     % in almost all cases, this is not what the user wants.
