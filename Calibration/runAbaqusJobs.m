@@ -9,9 +9,12 @@ function runAbaqusJobs(fileNames, nconcur)
 % irregular function termination), the cleanup function will execute.
 cleanupObj = onCleanup(@() cleanupJobs());
 
+% total number of jobs that need to be run
+numFiles = length(fileNames);
+
 % define the error conditions
 MAX_RESTART = 5;
-MAX_RUNTIME = 7200; % 2 hours
+MAX_RUNTIME = 20 * numFiles; % 20 mins per job
 
 % keep track of number of restarted jobs
 numRestart  = 0;
@@ -21,9 +24,6 @@ tic()
 
 % keep track of number of currently running jobs
 numRunning = 0;
-
-% total number of jobs that need to be run
-numFiles = length(fileNames);
 
 % initialize
 flags = zeros(numFiles,1);
